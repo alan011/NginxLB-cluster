@@ -31,11 +31,16 @@
 本着前后端分离的开发原则，本系统将所有功能都先封装成了接口。
 
 
-httpproxy管理接口
+七层代理管理接口
 ----------
 
 URI: /proxy/api/v1/httpproxy
 
+
+四层代理管理接口
+----------
+
+URI: /proxy/api/v1/tcpproxy
 
 
 访问IP管理接口
