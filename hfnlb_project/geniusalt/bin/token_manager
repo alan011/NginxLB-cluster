@@ -1,0 +1,142 @@
+#!/usr/local/bin/python3
+import os, sys, django, random, re
+
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)),'../../'))
+sys.path.append(BASE_DIR)
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "%s.settings" % os.path.basename(BASE_DIR))
+django.setup()
+
+from geniusalt.models import AuthToken
+from datetime import datetime, timedelta
+
+def generateToken(length=64):
+    seeds = 'abcdefghijklmnopqrstuvwxyZABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+    return ''.join([ seeds[random.randint(0, len(seeds) - 1)] for i in range(length)])
+
+def generateRandomUser(length=8):
+    seeds = 'abcdefghijklmnopqrstuvwxyZABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    return ''.join([ seeds[random.randint(0, len(seeds) - 1)] for i in range(length)])
+
+def make_token(username=None, expired_time=None):
+    if not username:
+        username = generateRandomUser()
+        while AuthToken.objects.filter(username=username).exists():
+            username = generateRandomUser()
+
+    token = generateToken()
+    while AuthToken.objects.filter(token=token).exists():
+        token = generateToken()
+
+    if expired_time is None:
+        expired_time = 86400
+    obj = AuthToken(username=username, token=token, expired_time=expired_time)
+    obj.save()
+
+    expired_display = 'Never expired.'
+    if obj.expired_time != 0:
+        expired_display = '%d seconds later.' % obj.expired_time
+    return ('%s.%s' % (username, token), expired_display)
+
+
+def list_token():
+    data = []
+    for obj in AuthToken.objects.all():
+        if obj.expired_time == 0:
+            data.append('%s.%s\tNever expired.' % (obj.username, obj.token))
+        elif(datetime.now() - obj.sign_date < timedelta(seconds=obj.expired_time)):
+            expired_date = obj.sign_date + timedelta(seconds=obj.expired_time)
+            data.append('%s.%s\twill expired at %s.' % (obj.username, obj.token, expired_date.strftime('%F %X')))
+        else:
+            data.append('%s.%s\texpired!' % (obj.username, obj.token))
+    return data
+
+def clean_token():
+    data= []
+    for obj in AuthToken.objects.all():
+        if obj.expired_time == 0 or (datetime.now() - obj.sign_date < timedelta(seconds=obj.expired_time)):
+            pass
+        else:
+            data.append('%s.%s\tdeleted!' % (obj.username, obj.token))
+            obj.delete()
+    return data
+
+def delete_token(username, token):
+    data = []
+    for obj in AuthToken.objects.filter(username=username, token=token):
+        obj.delete()
+        data.append('%s.%s\tdeleted!' % (username, token))
+
+    return data
+
+def usage():
+    print("""==========================
+Usage:
+    python3 token_manager.py add [-u <username>] [-e <expired_time>] ### To add a token
+    python3 token_manager.py list                                         ### To list tokens.
+    python3 token_manager.py delete <username>.<token>                    ### To delete a specified token.
+    python3 token_manager.py clean                                        ### To clean expired tokens.
+
+    -u username:
+        You can provide a specified username in length 8. If not provided, A random username will be auto-generated.
+    -e num:
+        You can provide a number to specified the expired_time in seconds of this token. Default is '86400', means one day.
+        If '0' is given, the token will never expired.
+
+==========================""")
+
+
+if __name__ == '__main__':
+    if len(sys.argv) < 2 or  '--help' in sys.argv or '-h' in sys.argv:
+        usage()
+        sys.exit(0)
+
+    if sys.argv[1] == 'add':
+        username = None
+        expired_time = None
+        if '-u' in sys.argv:
+            i = sys.argv.index('-u')
+            if len(sys.argv) == i + 1:
+                print("ERROR: username must be given with '-u' option.\n")
+                sys.exit(1)
+            username = sys.argv[i + 1]
+            if len(username) != 8:
+                print("ERROR: length of a username must be 8.\n")
+                sys.exit(1)
+            if not re.search('^\w+$', username):
+                print("ERROR: username must be consist of alphabet and numbers.\n")
+                sys.exit(1)
+
+        if '-e' in sys.argv:
+            i = sys.argv.index('-e')
+            if len(sys.argv) == i + 1:
+                print("ERROR: expired_time must be given with '-e' option.\n")
+                sys.exit(1)
+            expired_time = sys.argv[i + 1]
+            if not re.search('^[0-9]+$', expired_time):
+                print("ERROR: expired_time must be a number.\n")
+                sys.exit(1)
+            expired_time = int(expired_time)
+
+        print("Token generated successfully: %s\nToken expired time:%s" % make_token(username, expired_time))
+    elif sys.argv[1] == 'list':
+        for line in list_token():
+            print(line)
+
+    elif sys.argv[1] == 'clean':
+        for line in clean_token():
+            print(line)
+
+    elif sys.argv[1] == 'delete':
+        if len(sys.argv) != 3 or not re.search('^\w+\.\w+$', sys.argv[2]):
+            usage()
+            sys.exit(1)
+
+        result = delete_token(sys.argv[2].split('.')[0],sys.argv[2].split('.')[1])
+        if not result:
+            print("ERROR: Token '%s' not found" % sys.argv[2])
+        else:
+            for line in result:
+                print(line)
+    else:
+        usage()
+        sys.exit(1)

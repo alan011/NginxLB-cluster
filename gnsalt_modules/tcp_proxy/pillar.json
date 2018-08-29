@@ -1,0 +1,4 @@
+{
+"pillar_required":["app_name", "app_servers", "app_port"],
+"pillar_optional":["proxy_port", "app_servers_backup","is_disabled"]
+}

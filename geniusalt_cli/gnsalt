@@ -1,0 +1,19 @@
+#!/usr/local/bin/python3
+import sys
+from os.path import dirname, abspath
+sys.path.append(dirname(abspath(__file__)))
+
+from sub import CommandDispatcher
+
+if __name__ == '__main__':
+    if len(sys.argv) < 2 or 'help' in sys.argv or '-h' in sys.argv or '--help' in sys.argv:
+        CommandDispatcher.usage()
+        sys.exit(0)
+
+    action = sys.argv[1]
+    if not action in CommandDispatcher.action_supported:
+        CommandDispatcher.usage()
+        sys.exit(1)
+
+    command = CommandDispatcher(action=action, args=sys.argv[2:])
+    command.run()

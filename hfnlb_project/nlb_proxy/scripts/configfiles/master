@@ -1,0 +1,10 @@
+worker_threads: 4
+#external_auth:
+#  pam:
+#    appmgr:
+#      - .*
+state_verbose: False
+state_output: changes
+file_roots:
+  base:
+    - /data1/salt

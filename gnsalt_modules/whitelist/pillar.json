@@ -1,0 +1,4 @@
+{
+"pillar_required":["proxy_domain_name", "iplist"],
+"pillar_optional":["is_disabled"]
+}
