@@ -139,7 +139,7 @@ URI: `/proxy/api/v1/httpproxy`
     post数据字段:
 
     ```
-{   "action":"add",                      #必填字段，表示要执行添加动作。
+    {"action":"add",                      #必填字段，表示要执行添加动作。
     "proxy_domain_name":"<反向代理域名>",   #必填字段，用于servername.
     "app_name":"<被代理的应用名称>",         #必填字段，用于命名upstream.
     "app_port":"<被代理的应用端口>",         #必填字段，用于upstream中，定义后端机器的服务端口转发。
@@ -149,7 +149,7 @@ URI: `/proxy/api/v1/httpproxy`
     "other_domain_names":"<额外的servername>"             #可选字段，多个用'/'隔开
     "proxy_listen_ports":"<额外的nginx listen端口>"        #可选字段，不指定的话，nginx默认监听80。多个用'/'隔开。
     "description":"<文字描述>"                            #文字描述
-}
+    }
     ```
 
 * 删：
