@@ -1,10 +1,11 @@
 #!/bin/bash
 
 ACTION=$1
+host_name=`hostname`
 
 function check_params(){
     [ -z "$ACTION" ] && echo "ERROR: Parameter 'ACTION' master be given as \$1." && exit 1
-    echo "===> ${ACTION}..."
+    echo "===> [${host_name}] ${ACTION}..."
 }
 
 function start_nginx(){

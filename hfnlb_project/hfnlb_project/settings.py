@@ -25,7 +25,7 @@ SECRET_KEY = '@qjw#ipoms3-31hpv$x(m@(m367fk&@@lve6+0n93)&70!=q7m'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['172.16.40.157','127.0.0.1']
+ALLOWED_HOSTS = ['172.16.40.169','127.0.0.1']
 
 
 # Application definition
@@ -84,7 +84,7 @@ DATABASES = {
         'NAME': 'nlb',
         'HOST': '127.0.0.1',
         'USER': 'root',
-        'PASSWORD': '1234.com',
+        'PASSWORD': 'pui8exTWi6GZ2Rv1',
         'OPTIONS':{'init_command': "SET sql_mode='STRICT_TRANS_TABLES'"},
     }
 }

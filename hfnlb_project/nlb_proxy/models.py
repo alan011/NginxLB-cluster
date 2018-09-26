@@ -103,6 +103,7 @@ class ClusterMember(models.Model):
     is_init            = models.IntegerField('是否初始化',choices=INIT_STAT, default=0) #安装salt-minion, 优化系统参数。
     is_alive           = models.IntegerField('是否存活',choices=ALIVE_STAT, default=0) #主要检查是否还受salt-master控制。
     need_reload        = models.IntegerField('是否需要reload',choices=YES_or_NO, default=0)
+    is_deleted         = models.IntegerField('是否删除', choices=YES_or_NO, default=0)
 
 class NLBConfig(models.Model):
     NAMES = (('initConfig','初始化配置'),)

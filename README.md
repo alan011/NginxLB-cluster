@@ -29,17 +29,20 @@
 安装使用
 ===========
 
-运行环境：
+所有机器底层依赖：
 * OS: centos6.x
+* ssh: 请确保集群中所有机器可以通过统一的USER/PASSWD登录机器，并能免密使用sudo，以供集群管理自动完成初始化。
+* 底层依赖-1：openresty，请确保集群中所有机器可以通过yum安装openresty软件包。Daemon程序会自动安装，启动服务。
+* 底层依赖-2：saltstack，请确保集群中所有机器可以通过yum安装salt-master, salt-minion软件包。Daemon程序会自动安装，启动相关服务。
+
+master运行环境：
 * 语言: python-3.5 以上
 * 框架: django-1.11.x
-* pip3依赖包: PyYaml, jsonfield, paramiko, requests
-* 底层依赖-1：openresty，请确保集群中所有机器可以通过yum安装openresty软件包。
-* 底层依赖-2：saltstack，请确保正确安装、启动了salt-master服务。这意味着，本软件包安装的机器，即是集群的master。
+* pip3依赖包: PyYaml, jsonfield, paramiko, requests。若DB使用mysql，还需要安装'mysqlclient'.
 
-开发测试基于Chrome，请使用Chrome浏览器。
+浏览器：WEB端使用vue.js开发，Chrome开发测试环境，请使用Chrome浏览器。
 
-安装方法：
+master安装方法：
 * 下载本项目所有源码，解压至一个目录。
 * 设置django配置文件: `hfnlb_project/hfnlb_project/settings.py`, 修改`ALLOWED_HOSTS`,`DATABASES`两个配置项，并根据DB的配置，创建相应的库。
 * 启动web服务：到`hfnlb_project/`目录下，启动`start.sh`
@@ -48,7 +51,6 @@
 注意：
 * `start.sh`中默认启动`0.0.0.0:10080`，可根据自己需求修改。
 * `start.sh`这种启动方式，仅供测试、体验用。若要用到高并发环境中，请使用`nginx + uWSGI` 来启动web服务。
-
 
 
 集群管理

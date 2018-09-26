@@ -1,6 +1,6 @@
 #!/usr/local/bin/python3
 from nlb_proxy.models import NLBConfig, ClusterMember
-from nlb_proxy.config import WEB_MASTER, WEB_MASTER_PORT, SALT_BIN
+from nlb_proxy.config import WEB_MASTER, WEB_PORT, SALT_BIN
 from nlb_proxy.tools  import Logging
 from geniusalt.operators import RelationOperator
 from .daemon_mixin import sshExecutorMixin, DaemonMixin
@@ -11,9 +11,9 @@ class MinionHealthCheck(sshExecutorMixin, DaemonMixin):
     def __init__(self, log_path):
         super().__init__(log_path)
         self.logger.log_prefix = 'HealthCheck'
-        self.queryset = ClusterMember.objects.filter(is_init=1)
+        self.queryset = ClusterMember.objects.filter(is_init=1, is_deleted=0)
         self.master_obj = self.findMaster()
-        self.remote_script = 'http://%s:%s/scripts/service_check.sh' % (WEB_MASTER, WEB_MASTER_PORT)
+        self.remote_script = 'http://%s:%s/scripts/service_check.sh' % (WEB_MASTER, WEB_PORT)
 
     def yamlHandler(self, result):
         try:
@@ -61,6 +61,7 @@ class MinionHealthCheck(sshExecutorMixin, DaemonMixin):
             exec_result[obj] = False
             cmd = "%s --out json %s cmd.script %s %s" % (SALT_BIN,obj.hostname, self.remote_script, script_args )
             result_dict = self.jsonHandler(popen(cmd).read().strip())
+            # print(result_dict)
             if result_dict:
                 if isinstance(result_dict[obj.hostname], dict):
                     if result_dict[obj.hostname]['retcode'] == 0:
@@ -69,7 +70,7 @@ class MinionHealthCheck(sshExecutorMixin, DaemonMixin):
                         script_output = result_dict[obj.hostname]['stdout'] + result_dict[obj.hostname]['stderr']
                         self.logger.log(script_output.replace('\n', ';'))
                 else:
-                    self.logger.log("ERROR: Node '%s' return unexpect salt-returns: " + str(result_dict[obj.hostname]))
+                    self.logger.log("ERROR: Node '%s' return unexpect salt-returns. " % str(result_dict[obj.hostname]))
         return exec_result
 
     def saltHealthCheck(self):
@@ -101,7 +102,7 @@ class MinionHealthCheck(sshExecutorMixin, DaemonMixin):
                         ### clone pillars of this obj from a healthy member and apply these pillars to member.
                         relation_op.parameters = {'nodes':[obj.hostname], 'clone_target':[healthy_obj.hostname],'push':True}
                         result = relation_op.clone()
-                        print(result)
+                        # print(result)
                         if isinstance(result, dict):
                             if result['result'] == 'SUCCESS':
                                 obj.is_alive = 1
@@ -122,22 +123,23 @@ class MinionHealthCheck(sshExecutorMixin, DaemonMixin):
     def nginxHealthCheck(self):
         if not self.master_obj:
             return None
-        queryset = self.queryset.filter(is_alive__in = [1,3])
+        queryset = self.queryset.filter(is_alive__in = [1,3], is_deleted=0)
         check_result = self.execScriptOnMaster(queryset, 'nginx_status')
 
         for obj in check_result:
             if check_result[obj]:
                 if obj.is_alive == 3:  ### Change status from 'nginx unhealthy' to 'healthy'.
-                    obj.is_alive == 1
+                    obj.is_alive = 1
                     obj.save()
             else:
                 if obj.is_alive == 1:  ### Change status from 'healthy' to 'nginx unhealthy'.
                     obj.is_alive = 3
                     obj.save()
+
     def reloadHealthyNginx(self):
         if not self.master_obj:
             return None
-        queryset = self.queryset.filter(is_alive=1)
+        queryset = self.queryset.filter(is_alive=1, is_deleted=0)
         app_objs = []
         for model in self.model_to_module:
             app_queryset = model.objects.filter(is_deleted=0, apply_stat=3)

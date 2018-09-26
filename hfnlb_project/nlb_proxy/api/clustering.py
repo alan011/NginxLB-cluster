@@ -25,15 +25,13 @@ class NLBCluster(View):
             return queryset.get(ip = ip)
 
     def saveObject(self, obj):
-        obj.save()
         try:
             obj.save()
         except:
             self.response_data.update({'result':'FAILED', 'message':"错误：数据库错误，请联系管理员！"})
             self.status = 500
             return False
-        else:
-            return True
+        return True
 
     def getInit(self):
         init_setting = {'sysuser':'',
@@ -84,50 +82,65 @@ class NLBCluster(View):
         ips = self.post_data.get('ip_list')
         if ips:
             ip_list = ips.split('\n')
-            # print(ip_list)
-            is_ip = True
+            new_ip   = []
+            readd_ip = []
             for ip in ip_list:
                 if not validateIP(ip):
                     is_ip = False
                     self.response_data.update({'result':'FAILED','message':"错误：发现无效IP '%s'!" % ip})
                     self.status=400
-                elif self.checkIP(ip):
-                    is_ip = False
-                    self.response_data.update({'result':'FAILED','message':"错误：IP '%s'已在集群中存在!" % ip})
-                    self.status=400
-            if is_ip:
-                for ip in ip_list:
-                    obj = ClusterMember(ip=ip)
-                    if not self.saveObject(obj):
-                        break
+                    break
+                else:
+                    obj = self.checkIP(ip)
+                    if obj:   ### ip exists in DB.
+                        if obj.is_deleted != 0:
+                            readd_ip.append(obj)
+                    else:
+                        new_ip.append(ip)
+            for ip in new_ip:
+                obj = ClusterMember(ip=ip)
+                if not self.saveObject(obj):
+                    break
+            for obj in readd_ip:
+                obj.is_deleted = 0
+                obj.is_init    = 0
+                obj.is_alive   = 0
+                obj.need_reload = 0
+                obj.role       = 'MINION'
+                if obj.ip == config.WEB_MASTER:
+                    obj.role = 'MASTER'
+                if not self.saveObject(obj):
+                    break
 
     def kickoffNode(self):
         ip = self.post_data.get('ip')
         if ip:
             obj = self.checkIP(ip)
             if obj:
-                obj.delete();
+                if obj.is_deleted == 0:
+                    obj.is_deleted = 1
+                    self.saveObject(obj)
 
-    def setMaster(self):
-        ip = self.post_data.get('ip')
-        if ip:
-            obj = self.checkIP(ip)
-            if obj:
-                obj.role = 'MASTER'
-                obj.is_init = 2
-                self.saveObject(obj)
+    # def setMaster(self):
+    #     ip = self.post_data.get('ip')
+    #     if ip:
+    #         obj = self.checkIP(ip)
+    #         if obj:
+    #             obj.role = 'MASTER'
+    #             obj.is_init = 2
+    #             self.saveObject(obj)
 
-    def setMinion(self):
-        ip = self.post_data.get('ip')
-        if ip:
-            obj = self.checkIP(ip)
-            if obj:
-                obj.role = 'MINION'
-                obj.is_init = 3
-                self.saveObject(obj)
+    # def setMinion(self):
+    #     ip = self.post_data.get('ip')
+    #     if ip:
+    #         obj = self.checkIP(ip)
+    #         if obj:
+    #             obj.role = 'MINION'
+    #             obj.is_init = 3
+    #             self.saveObject(obj)
 
     def get(self, request, *args, **kwargs):
-        queryset = ClusterMember.objects.all()
+        queryset = ClusterMember.objects.filter(is_deleted=0)
         data = []
         for node in queryset:
             attr = {'hostname':node.hostname,
@@ -152,13 +165,18 @@ class NLBCluster(View):
             elif node.is_alive == 4:
                 attr['status'] = ('不能连接到master','red')
 
+            if attr['role'] == 'MASTER':
+                 attr['role'] = 'MASTER/MINION'
+
+
             data.append(attr)
         self.response_data['data'] = data
 
         return HttpResponse(json.dumps(self.response_data),content_type='application/json',status=self.status)
 
     def post(self, request, *args, **kwargs):
-        legal_action = ['getInit', 'setInit', 'setMaster',  'setMinion','expandCluster', 'kickoffNode']
+        # legal_action = ['getInit', 'setInit', 'setMaster',  'setMinion','expandCluster', 'kickoffNode']
+        legal_action = ['getInit', 'setInit','expandCluster', 'kickoffNode']
         self.post_data = {k:v.strip() for k,v in request.POST.items()}
         # print(self.post_data)
 

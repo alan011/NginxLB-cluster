@@ -12,7 +12,8 @@ from nlb_proxy.daemon.apply_handler import ApplyHandler
 from nlb_proxy.daemon.health_check import MinionHealthCheck
 from nlb_proxy.tools import Logging
 from nlb_proxy import config
-from multiprocessing import Process
+# from multiprocessing import Process
+from threading       import Thread
 
 class NLBDaemon(object):
     interval = config.TIMER_RUNTIME_INTERVAL
@@ -28,7 +29,8 @@ class NLBDaemon(object):
                 pass
                 # self.logger.log("Subprocess of '%s' is not ending. Ignored it at this runtime." % name)
             else:
-                self.pool[name] = Process(target=func)
+                # self.pool[name] = Process(target=func)
+                self.pool[name] = Thread(target=func)
                 self.pool[name].start()
 
     def run(self):
@@ -37,9 +39,9 @@ class NLBDaemon(object):
             apply_handler = ApplyHandler(self.log_file)
             health_check = MinionHealthCheck(self.log_file)
 
-            # self.worker('server_init',server_init.serverInit)
-            # self.worker('manage_keys',server_init.acceptKeys)
-            # self.worker('apply_config',apply_handler.applyHandler)
+            self.worker('server_init',server_init.serverInit)
+            self.worker('manage_keys',server_init.acceptKeys)
+            self.worker('apply_config',apply_handler.applyHandler)
             self.worker('health_check',health_check.healthCheck)
 
             time.sleep(self.interval)

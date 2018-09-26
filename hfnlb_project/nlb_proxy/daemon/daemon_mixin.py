@@ -59,7 +59,7 @@ class sshExecutorMixin(object):
         self.logger.log("Logout from host: '%s'!" % ip)
 
     def connectToMaster(self, sysuser, syspasswd):
-        queryset = ClusterMember.objects.filter(role='MASTER')
+        queryset = ClusterMember.objects.filter(role='MASTER', is_deleted=0)
         if queryset.exists():
             obj = queryset.get(role='MASTER')
             client = self.remoteConnect(obj.ip, sysuser, syspasswd)

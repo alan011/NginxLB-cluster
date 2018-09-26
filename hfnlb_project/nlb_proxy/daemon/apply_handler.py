@@ -78,7 +78,7 @@ class ApplyHandler(DaemonMixin):
         return instance, pillar
 
     def apply(self, model):
-        nodes = self.getNodes({'is_init':1, 'is_alive':1})
+        nodes = self.getNodes({'is_init':1, 'is_alive':1, 'is_deleted':0})
         if not nodes:
             self.logger.log('ERROR: No Nodes available to apply Instances!')
             return None
