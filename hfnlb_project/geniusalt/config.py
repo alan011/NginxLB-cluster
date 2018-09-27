@@ -1,3 +1,6 @@
+from django.conf import settings
+import os
+
 ENVIRONMENTS = [
                 'dev',
                 'sit',
@@ -14,4 +17,5 @@ ENVIRONMENTS_ALIAS = {
                 }
 
 LOG_PATH = '/var/log/geniusalt'
-SALT_FILE_ROOT = '/mnt/hgfs/hfnlb/gnsalt_modules'
+# SALT_FILE_ROOT = '/mnt/hgfs/hfnlb/gnsalt_modules'
+SALT_FILE_ROOT =  os.path.join(settings.BASE_DIR, '../gnsalt_modules')

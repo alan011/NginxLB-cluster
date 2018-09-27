@@ -1,5 +1,6 @@
 from nlb_proxy.models import ClusterMember
 from nlb_proxy.config import WEB_MASTER, WEB_PORT
+from geniusalt.operators import ModuleOperator, NodeOperator
 from .daemon_mixin import sshExecutorMixin
 
 class ServerInitHandler(sshExecutorMixin):
@@ -54,6 +55,17 @@ class ServerInitHandler(sshExecutorMixin):
             master.save()
             self.logger.log("To add master with ip '{}' succeeded.".format(WEB_MASTER))
 
+        ### To init geniusalt with internal-modules.
+        module_op = ModuleOperator(parameters={})
+        modules_check = module_op.show()
+        if not isinstance(modules_check, dict) or modules_check.get('result') != 'SUCCESS':
+            self.logger.log("ERROR: geniusalt is not ready!")
+        elif not modules_check['data']:
+            result = module_op.scan()
+            print("===> to scan modules: %s " % result)
+            if not isinstance(result, dict) or result['result'] != 'SUCCESS':
+                self.logger.log(" [Error from geniusalt] %s" % result)
+
     def serverInit(self):
         ### To set master with WEB_MASTER in config.py.
         self.setMaster()
@@ -107,14 +119,27 @@ class ServerInitHandler(sshExecutorMixin):
         # print('Start keys accepting works.')
         success_members = ClusterMember.objects.filter(is_init=1, is_alive=0, is_deleted=0)
         if success_members.exists():
-            initSetting = self.getSetting()
-            if not initSetting:
-                return None
-            # print("=========> %s" % initSetting)
-            master_obj, master_ssh_client = self.connectToMaster(initSetting['sysuser'],initSetting['syspasswd'])
-            if master_obj and master_obj.is_init == 1:
-                return_code = self.remoteRun(master_ssh_client, 'sudo /bin/bash /tmp/nlb_init.sh %s accept_keys %s' % (master_obj.ip, ','.join(obj.hostname for obj in success_members)))
-                if return_code == 0:
-                    for obj in success_members:
-                        obj.is_alive = 1
-                        obj.save()
+            node_op = NodeOperator(parameters={})
+            result = node_op.scan()
+            print("===> To scan nodes: %s" % result)
+            if isinstance(result, dict) and result.get('result') == 'SUCCESS':
+                for obj in success_members:
+                    obj.is_alive = 1
+                    obj.save()
+            else:
+                self.logger.log(" [Error from geniusalt] %s" % result)
+
+            # initSetting = self.getSetting()
+            # if not initSetting:
+            #     return None
+            # # print("=========> %s" % initSetting)
+            # master_obj, master_ssh_client = self.connectToMaster(initSetting['sysuser'],initSetting['syspasswd'])
+            # if master_obj and master_obj.is_init == 1:
+            #     return_code = self.remoteRun(master_ssh_client, 'sudo /bin/bash /tmp/nlb_init.sh %s accept_keys %s' % (master_obj.ip, ','.join(obj.hostname for obj in success_members)))
+            #     if return_code == 0:
+            #         for obj in success_members:
+            #             obj.is_alive = 1
+            #             obj.save()
+            #         ### To add new nodes to geniusalt
+            #         node_op = NodeOperator(parameters={})
+            #         node_op.scan()

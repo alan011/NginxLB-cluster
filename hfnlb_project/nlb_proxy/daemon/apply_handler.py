@@ -38,6 +38,7 @@ class ApplyHandler(DaemonMixin):
 
     def getModulePillars(self, module):
         self.module_op.parameters = {'name':module}
+        # self.module_op.parameters = {}
         result = self.module_op.show()
         # print(result)
         if isinstance(result, dict):
@@ -68,6 +69,7 @@ class ApplyHandler(DaemonMixin):
         instance, pillar = '',{}
         if module in ('http_proxy', 'tcp_proxy'):
             pillar_vars = self.getModulePillars(module)
+            # print(pillar_vars)
             instance = "%s.%s" % (module,obj.app_name)
             pillar = {k:getattr(obj, k) for k in pillar_vars if getattr(obj, k)}
         elif module in ('whitelist', 'blacklist'):

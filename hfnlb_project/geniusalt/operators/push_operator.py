@@ -73,7 +73,7 @@ class PushOperator(Operator):
             for n_name in pushlog:
                 logs = '\n'.join(pushlog[n_name])
                 # print(logs)
-                if re.search('-+\nSucceeded:\s+\d+(\s+\(changed=\d+\))?\nFailed:\s+0\n-+\nTotal states run:\s+\d+\s*$', logs):
+                if re.search('-+\nSucceeded:\s+\d+(\s+\(changed=\d+\))?\nFailed:\s+0\n-+', logs):
                     succeeded_nodes.append(n_name)
                 else:
                     failed_nodes.append(n_name)

@@ -186,7 +186,7 @@ class NodeOperator(Operator):
             line_content = line.strip()
             if line_content and not re.search('^Unaccepted Keys', line_content):
                 nodes.append(line_content)
-                os.system('/usr/bin/salt-key -a %s' % line_content)
+                os.system('/usr/bin/salt-key -a %s -y' % line_content)
 
         for node in nodes:
             obj = self.getObject(Node, node)
